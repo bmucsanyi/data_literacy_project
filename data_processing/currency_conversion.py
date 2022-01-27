@@ -3,6 +3,24 @@ import pandas as pd
 import re
 from currency_converter import CurrencyConverter
 
+CURRENCY_META = {
+    "€": {"start_year": 1996, "id": "EUR"},
+    "₹": {"start_year": 1960, "id": "INR"},
+    "£": {"start_year": 1910, "id": "GBP"},
+    "CA$": {"start_year": 1915, "id": "CAD"},
+    "A$": {"start_year": 1923, "id": "AUD"},
+    "SEK": {"start_year": 1960, "id": "SEK"},
+    "NOK": {"start_year": 1960, "id": "NOK"},
+    "R$": {"start_year": 1960, "id": "ZAR"},
+    "DKK": {"start_year": 1960, "id": "DKK"},
+    "RUR": {"start_year": 1993, "id": "RUB"},
+    "CN¥": {"start_year": 1987, "id": "CNY"},
+    "TRL": {"start_year": 1960, "id": "TRY"},
+    "HUF": {"start_year": 1973, "id": "HUF"},
+    "PLN": {"start_year": 1971, "id": "PLN"},
+    "¥": {"start_year": 1960, "id": "JPY"},
+}
+
 
 def convert_column(df, column):
     """Conversion from multiple currencies to USD with corrected inflation of the year
@@ -23,7 +41,6 @@ def convert_column(df, column):
     for i in range(len(column_data)):
         string = column_data[i]
         if not pd.isna(string):
-
             value[i] = int("".join(re.findall(r"[\d]+", string)))
             currencies[i] = re.findall(r"[^{\d,\xa0}]+", string)[0]
 
@@ -46,515 +63,84 @@ def convert_all(value, currencies, year):
     output:
         value, currencies with corrected values and symbol
     """
+    converter = CurrencyConverter()
+    
     value, currencies = convert_usd_usd(value, currencies, year)
-    value, currencies = convert_eur_usd(value, currencies, year)
-    value, currencies = convert_inr_usd(value, currencies, year)
-    value, currencies = convert_gbp_usd(value, currencies, year)
-    value, currencies = convert_cad_usd(value, currencies, year)
-    value, currencies = convert_aud_usd(value, currencies, year)
-    value, currencies = convert_sek_usd(value, currencies, year)
-    value, currencies = convert_nok_usd(value, currencies, year)
-    value, currencies = convert_zar_usd(value, currencies, year)
-    value, currencies = convert_dkk_usd(value, currencies, year)
-    value, currencies = convert_rub_usd(value, currencies, year)
-    value, currencies = convert_cny_usd(value, currencies, year)
-    value, currencies = convert_try_usd(value, currencies, year)
-    value, currencies = convert_huf_usd(value, currencies, year)
-    value, currencies = convert_pln_usd(value, currencies, year)
-    value, currencies = convert_jpy_usd(value, currencies, year)
+    for currency in CURRENCY_META:
+        value, currencies = convert_other_usd(
+            currency, CURRENCY_META[currency], currencies, value, year, converter
+        )
 
     return value, currencies
 
 
-def convert_usd_usd(value, currencies, year):
-    """Conversion from USD to USD with corrected inflation of the current year
+def convert_usd_usd(film_currencies, film_values, film_years):
+    """Correct inflation of USD to current year
 
     input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
+        film_currencies: np.ndarray
+            column corresponding to the currencies of the films
+        film_values: np.ndarray
+            column corresponding to the values of the films
+        film_years: pd.Series
+            column corresponding to the startYear of the films
+    returns:
         value, currencies with corrected values and symbol 
     """
     df_usd = pd.read_csv("./inflation_data/usd.csv")
     np_amount = df_usd["amount"].to_numpy()
     current_amount = np_amount[-1]
 
-    for i in range(len(currencies)):
-        if currencies[i] == "$":
-            target_year = int(year[i]) if int(year[i]) >= 1910 else 1910
+    for i in range(len(film_currencies)):
+        if film_currencies[i] == "$":
+            target_year = int(film_years[i]) if int(film_years[i]) >= 1910 else 1910
             inflation_factor = (
                 current_amount / df_usd[df_usd.year == target_year].amount
             )
-            currencies[i] = "usd"
-            value[i] = value[i] * inflation_factor
-    del df_usd
+            film_currencies[i] = "usd"
+            film_values[i] = film_values[i] * inflation_factor
 
     return value, currencies
 
-
-def convert_eur_usd(value, currencies, year):
-    """Conversion from EUR to USD with corrected inflation of the current year
+def convert_other_usd(
+    currency,
+    currency_dict,
+    film_currencies,
+    film_values,
+    film_years,
+    converter
+):
+    """Conversion from ``currency`` to USD with corrected inflation of the current year
 
     input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
+        currency: str
+            the currency we wish to convert to USD
+        currency_dict: dict
+            dictionary containing lowest conversion year and id
+        film_currencies: np.ndarray
+            column corresponding to the currencies of the films
+        film_values: np.ndarray
+            column corresponding to the values of the films
+        film_years: pd.Series
+            column corresponding to the startYear of the films
+        converter: CurrencyConverter
 
-    output:
+    returns:
         value, currencies with corrected values and symbol 
     """
-    c = CurrencyConverter()
-
-    df_eur = pd.read_csv("./inflation_data/eur.csv")
+    currency_id = currency_dict["id"]
+    df = pd.read_csv(f"./inflation_data/{currency_id.lower()}.csv")
     np_amount = df_eur["amount"].to_numpy()
     current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "€":
-            target_year = int(year[i]) if int(year[i]) >= 1996 else 1996
+    start_year = currency_dict["start_year"]
+    
+    for i in range(len(film_currencies)):
+        if film_currencies[i] == currency:
+            target_year = int(film_years[i]) if int(film_years[i]) >= start_year else start_year
             inflation_factor = (
-                current_amount / df_eur[df_eur.year == target_year].amount
+                current_amount / df[df.year == target_year].amount
             )
-            value[i] = c.convert(value[i] * inflation_factor, "EUR", "USD")
-            currencies[i] = "usd"
-
-    del df_eur
+            film_values[i] = converter.convert(film_values[i] * inflation_factor, currency_id, "USD")
+            film_currencies[i] = "usd"
 
     return value, currencies
-
-
-def convert_inr_usd(value, currencies, year):
-    """Conversion from INR to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_inr = pd.read_csv("./inflation_data/inr.csv")
-    np_amount = df_inr["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "₹":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_inr[df_inr.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "INR", "USD")
-            currencies[i] = "usd"
-
-    del df_inr
-
-    return value, currencies
-
-
-def convert_gbp_usd(value, currencies, year):
-    """Conversion from GBP to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_gbp = pd.read_csv("./inflation_data/gbp.csv")
-    np_amount = df_gbp["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "£":
-            target_year = int(year[i]) if int(year[i]) >= 1910 else 1910
-            inflation_factor = (
-                current_amount / df_gbp[df_gbp.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "GBP", "USD")
-            currencies[i] = "usd"
-
-    del df_gbp
-
-    return value, currencies
-
-
-def convert_cad_usd(value, currencies, year):
-    """Conversion from CAD to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_cad = pd.read_csv("./inflation_data/cad.csv")
-    np_amount = df_cad["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "CA$":
-            target_year = int(year[i]) if int(year[i]) >= 1915 else 1915
-            inflation_factor = (
-                current_amount / df_cad[df_cad.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "CAD", "USD")
-            currencies[i] = "usd"
-
-    del df_cad
-
-    return value, currencies
-
-
-def convert_aud_usd(value, currencies, year):
-    """Conversion from AUD to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_aud = pd.read_csv("./inflation_data/aud.csv")
-    np_amount = df_aud["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "A$":
-            target_year = int(year[i]) if int(year[i]) >= 1915 else 1915
-            inflation_factor = (
-                current_amount / df_aud[df_aud.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "AUD", "USD")
-            currencies[i] = "usd"
-
-    del df_aud
-
-    return value, currencies
-
-
-def convert_sek_usd(value, currencies, year):
-    """Conversion from SEK to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_sek = pd.read_csv("./inflation_data/sek.csv")
-    np_amount = df_sek["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "SEK":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_sek[df_sek.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "SEK", "USD")
-            currencies[i] = "usd"
-
-    del df_sek
-
-    return value, currencies
-
-
-def convert_nok_usd(value, currencies, year):
-    """Conversion from NOK to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_nok = pd.read_csv("./inflation_data/nok.csv")
-    np_amount = df_nok["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "NOK":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_nok[df_nok.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "NOK", "USD")
-            currencies[i] = "usd"
-
-    del df_nok
-
-    return value, currencies
-
-
-def convert_zar_usd(value, currencies, year):
-    """Conversion from ZAR to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_zar = pd.read_csv("./inflation_data/zar.csv")
-    np_amount = df_zar["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "R$":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_zar[df_zar.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "ZAR", "USD")
-            currencies[i] = "usd"
-
-    del df_zar
-
-    return value, currencies
-
-
-def convert_dkk_usd(value, currencies, year):
-    """Conversion from DKK to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_dkk = pd.read_csv("./inflation_data/dkk.csv")
-    np_amount = df_dkk["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "DKK":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_dkk[df_dkk.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "DKK", "USD")
-            currencies[i] = "usd"
-
-    del df_dkk
-
-    return value, currencies
-
-
-def convert_rub_usd(value, currencies, year):
-    """Conversion from RUB to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_rub = pd.read_csv("./inflation_data/rub.csv")
-    np_amount = df_rub["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "RUR":
-            target_year = int(year[i]) if int(year[i]) >= 1993 else 1993
-            inflation_factor = (
-                current_amount / df_rub[df_rub.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "RUB", "USD")
-            currencies[i] = "usd"
-
-    del df_rub
-
-    return value, currencies
-
-
-def convert_cny_usd(value, currencies, year):
-    """Conversion from NOK to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_cny = pd.read_csv("./inflation_data/cny.csv")
-    np_amount = df_cny["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "CN¥":
-            target_year = int(year[i]) if int(year[i]) >= 1987 else 1987
-            inflation_factor = (
-                current_amount / df_cny[df_cny.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "CNY", "USD")
-            currencies[i] = "usd"
-
-    del df_cny
-
-    return value, currencies
-
-
-def convert_try_usd(value, currencies, year):
-    """Conversion from NOK to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_try = pd.read_csv("./inflation_data/try.csv")
-    np_amount = df_try["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "TRL":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_try[df_try.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "TRY", "USD")
-            currencies[i] = "usd"
-
-    del df_try
-
-    return value, currencies
-
-
-def convert_huf_usd(value, currencies, year):
-    """Conversion from HUF to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_huf = pd.read_csv("./inflation_data/huf.csv")
-    np_amount = df_huf["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "HUF":
-            target_year = int(year[i]) if int(year[i]) >= 1973 else 1973
-            inflation_factor = (
-                current_amount / df_huf[df_huf.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "HUF", "USD")
-            currencies[i] = "usd"
-
-    del df_huf
-
-    return value, currencies
-
-
-def convert_pln_usd(value, currencies, year):
-    """Conversion from PLN to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_pln = pd.read_csv("./inflation_data/jpy.csv")
-    np_amount = df_pln["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "PLN":
-            target_year = int(year[i]) if int(year[i]) >= 1971 else 1971
-            inflation_factor = (
-                current_amount / df_pln[df_pln.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "PLN", "USD")
-            currencies[i] = "usd"
-
-    del df_pln
-
-    return value, currencies
-
-
-def convert_jpy_usd(value, currencies, year):
-    """Conversion from JPY to USD with corrected inflation of the current year
-
-    input:
-        value: nd.array of money value 
-        currencies: nd.array with currency symbol
-        year: nd.array with year of value 
-
-    output:
-        value, currencies with corrected values and symbol 
-    """
-    c = CurrencyConverter()
-
-    df_jpy = pd.read_csv("./inflation_data/jpy.csv")
-    np_amount = df_jpy["amount"].to_numpy()
-    current_amount = np_amount[-1]
-
-    for i in range(len(currencies)):
-        if currencies[i] == "¥":
-            target_year = int(year[i]) if int(year[i]) >= 1960 else 1960
-            inflation_factor = (
-                current_amount / df_jpy[df_jpy.year == target_year].amount
-            )
-            value[i] = c.convert(value[i] * inflation_factor, "JPY", "USD")
-            currencies[i] = "usd"
-
-    del df_jpy
-
-    return value, currencies
-
