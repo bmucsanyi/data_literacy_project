@@ -64,7 +64,7 @@ def convert_all(value, currencies, year):
         value, currencies with corrected values and symbol
     """
     converter = CurrencyConverter()
-    
+
     value, currencies = convert_usd_usd(value, currencies, year)
     for currency in CURRENCY_META:
         value, currencies = convert_other_usd(
@@ -100,15 +100,11 @@ def convert_usd_usd(film_currencies, film_values, film_years):
             film_currencies[i] = "usd"
             film_values[i] = film_values[i] * inflation_factor
 
-    return value, currencies
+    return film_values, film_currencies
+
 
 def convert_other_usd(
-    currency,
-    currency_dict,
-    film_currencies,
-    film_values,
-    film_years,
-    converter
+    currency, currency_dict, film_currencies, film_values, film_years, converter
 ):
     """Conversion from ``currency`` to USD with corrected inflation of the current year
 
@@ -130,17 +126,19 @@ def convert_other_usd(
     """
     currency_id = currency_dict["id"]
     df = pd.read_csv(f"./inflation_data/{currency_id.lower()}.csv")
-    np_amount = df_eur["amount"].to_numpy()
+    np_amount = df["amount"].to_numpy()
     current_amount = np_amount[-1]
     start_year = currency_dict["start_year"]
-    
+
     for i in range(len(film_currencies)):
         if film_currencies[i] == currency:
-            target_year = int(film_years[i]) if int(film_years[i]) >= start_year else start_year
-            inflation_factor = (
-                current_amount / df[df.year == target_year].amount
+            target_year = (
+                int(film_years[i]) if int(film_years[i]) >= start_year else start_year
             )
-            film_values[i] = converter.convert(film_values[i] * inflation_factor, currency_id, "USD")
+            inflation_factor = current_amount / df[df.year == target_year].amount
+            film_values[i] = converter.convert(
+                film_values[i] * inflation_factor, currency_id, "USD"
+            )
             film_currencies[i] = "usd"
 
-    return value, currencies
+    return film_values, film_currencies
