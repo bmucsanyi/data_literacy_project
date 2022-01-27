@@ -87,7 +87,7 @@ def convert_usd_usd(film_currencies, film_values, film_years):
     returns:
         film_values, film_currencies with corrected values and symbol 
     """
-    df_usd = pd.read_csv("./dat/inflation_data/usd.csv")
+    df_usd = pd.read_csv("../dat/inflation_data/usd.csv")
     np_amount = df_usd["amount"].to_numpy()
     current_amount = np_amount[-1]
 
@@ -125,7 +125,7 @@ def convert_other_usd(
         film_values, film_currencies with corrected values and symbol 
     """
     currency_id = currency_dict["id"]
-    df = pd.read_csv(f"./dat/inflation_data/{currency_id.lower()}.csv")
+    df = pd.read_csv(f"../dat/inflation_data/{currency_id.lower()}.csv")
     np_amount = df["amount"].to_numpy()
     current_amount = np_amount[-1]
     start_year = currency_dict["start_year"]
