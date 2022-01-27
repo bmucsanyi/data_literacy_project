@@ -8,7 +8,7 @@ class ImdbSpider(scrapy.Spider):
 
     def __init__(self):
         url_body = "https://www.imdb.com/title/"
-        tconst_data = pd.read_csv("tconst.csv", squeeze=True)
+        tconst_data = pd.read_csv("./dat/tconst.csv", squeeze=True)
         self.start_urls = [
             f"{url_body}{entry}/" for entry in tconst_data.tolist()
         ]  # [::-1000][:10]
@@ -16,23 +16,6 @@ class ImdbSpider(scrapy.Spider):
 
     def parse(self, response):
         tconst = response.url.split("/")[-2]
-
-        # str_list = response.xpath(
-        #     '//span[@class="ipc-metadata-list-item__list-content-item"]/text()'
-        # ).getall()
-
-        # sanity_check = response.xpath('//section[@data-testid="BoxOffice"]').getall()
-        # if not sanity_check:
-        #     self.check_save(response)
-        #     return
-        # print(30*"-")
-        # print(str_list)
-        # print(30*"-")
-
-        # budget = str_list[4]
-        # gross_usc = str_list[5]
-        # opening_usc = str_list[6]
-        # gross_ww = str_list[-1]
 
         resp_dict = {
             "tconst": tconst,
@@ -112,13 +95,13 @@ class ImdbSpider(scrapy.Spider):
         if len(self.buffer) > 2_000 or self.start_urls[-1] == response.url:
             new_df = pd.DataFrame(self.buffer)
             try:
-                old_df = pd.read_csv("tconst_scraped_data.csv")
+                old_df = pd.read_csv("./dat/tconst_scraped_data.csv")
             except FileNotFoundError:
                 old_df = None
 
             if old_df is not None:
                 new_df = new_df.append(old_df, ignore_index=True)
 
-            new_df.to_csv("tconst_scraped_data.csv", index=False)
+            new_df.to_csv("./dat/tconst_scraped_data.csv", index=False)
 
             self.buffer = []
