@@ -6,11 +6,8 @@ from tueplots import fontsizes
 
 
 def make_plot():
-    # Direct input
-    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
-
     # Options
-    params = {"text.usetex": True, "font.size": 9, "font.family": "sans"}
+    params = {"text.latex.preamble":r"\usepackage{lmodern}", "text.usetex": True, "font.size": 9, "font.family": "sans"}
     plt.rcParams.update(params)
     plt.rcParams.update(fontsizes.neurips2021())
 
@@ -89,7 +86,10 @@ def make_plot():
     ax[0].set_xlim(90, 140 + 50)
     ax[0].set_ylim(0, 0.055)
 
-    plt.savefig("fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True)
+    plt.savefig("../dat/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True)
     plt.savefig(
-        "fig2.png", bbox_inches="tight", pad_inches=0.0, facecolor="white", dpi=1000
+        "../dat/fig2.png", bbox_inches="tight", pad_inches=0.0, facecolor="white", dpi=1000
     )
+
+if __name__ == "__main__":
+    make_plot()

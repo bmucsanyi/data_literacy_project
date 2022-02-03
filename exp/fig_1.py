@@ -121,11 +121,9 @@ def scatter_hist(x1, x2, y, ax1, ax2, ax_histx1, ax_histx2, ax_histy):
 
 
 def make_plot():
-    # Direct input
-    plt.rcParams["text.latex.preamble"] = [r"\usepackage{lmodern}"]
 
     # Options
-    params = {"text.usetex": True, "font.size": 9, "font.family": "sans"}
+    params = {"text.latex.preamble":r"\usepackage{lmodern}", "text.usetex": True, "font.size": 9, "font.family": "sans"}
     plt.rcParams.update(params)
     plt.rcParams.update(fontsizes.neurips2021())
 
