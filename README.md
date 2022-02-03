@@ -1,1 +1,3 @@
-# data_literacy_project
+# Analysing Influential Factors of Movie Ratings
+
+![plt2](./plt/fig2.png)
