@@ -5,6 +5,11 @@ import seaborn as sns
 from tueplots import fontsizes
 import matplotlib.font_manager
 from matplotlib.colors import LinearSegmentedColormap
+import pandas as pd
+import sys
+
+sys.path.insert(0, "../src/")
+from eval_deep_models import make_prediction_data, train_model_variants
 
 
 def set_size(width_pt, fraction=1, subplots=(1, 1)):
@@ -131,9 +136,24 @@ def make_plot():
     plt.rcParams.update(params)
     plt.rcParams.update(fontsizes.neurips2021())
 
-    x1 = np.load("../dat/data_fig1/pred_lr.npy")
-    x2 = np.load("../dat/data_fig1/pred_relu.npy")
-    y = np.load("../dat/data_fig1/true_ratings.npy")
+    data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
+    (
+        (train_set_normalized, train_targets),
+        (val_set_normalized, val_targets),
+        (test_set_normalized, test_targets),
+    ) = make_prediction_data(data)
+    result_dict = train_model_variants(
+        train_set_normalized,
+        train_targets,
+        val_set_normalized,
+        val_targets,
+        test_set_normalized,
+        test_targets,
+    )
+
+    x1 = result_dict["MAE"][2]
+    x2 = result_dict["RELU6"][2]
+    y = result_dict["ground_truth"]
 
     # start with a square Figure
     # fig = plt.figure(figsize=(4, 4)) 5.499999861629998, 2.266124568404705

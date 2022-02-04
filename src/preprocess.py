@@ -1,6 +1,7 @@
 import pandas as pd
 from currency_conversion import convert_column
 
+
 def conversion(df):
     """convert:
             
@@ -25,10 +26,15 @@ def conversion(df):
 
     return df
 
+
 def merge_data():
     """Merge several IMDb pd.DataFrame's with the scraped data."""
     # Read the basic data frame of IMDb
-    df = pd.read_csv("../dat/imdb_data/title_basics/data.tsv", sep="\t", dtype={4: 'object', 5: 'object'})
+    df = pd.read_csv(
+        "../dat/imdb_data/title_basics/data.tsv",
+        sep="\t",
+        dtype={4: "object", 5: "object"},
+    )
     print("overall: ", len(df.index))
 
     # Sort out any non-movies (e.g tv-shows)
@@ -49,8 +55,10 @@ def merge_data():
     del df_reviews
 
     # Read in our scraped data
-    df_scrape = pd.read_csv("../dat/tconst_scraped_data.csv", dtype={6: 'object', 7: 'object'})
-    df_scrape = df_scrape[~df_scrape.duplicated(['tconst'], keep="first")]
+    df_scrape = pd.read_csv(
+        "../dat/tconst_scraped_data.csv", dtype={6: "object", 7: "object"}
+    )
+    df_scrape = df_scrape[~df_scrape.duplicated(["tconst"], keep="first")]
     print("Number scraped movies:\t", len(df_scrape))
 
     ## Hard Coding
@@ -62,9 +70,9 @@ def merge_data():
     df["tconst"] = df["tconst"].replace(["tt5072702"], "tt4508986")
     df["tconst"] = df["tconst"].replace(["tt6419536"], "tt4481310")
 
-    df = df[~df.duplicated(['tconst'], keep="first")]
+    df = df[~df.duplicated(["tconst"], keep="first")]
 
-    # Drop Movie 
+    # Drop Movie
     # "tt7368158", "tt2437136", "tt2584608", "tt6858500",
     # "tt7375242", "tt7598832", "tt7718552", "tt7728678", "tt7738378"
     # "tt8768374", "tt9828428"
@@ -126,10 +134,15 @@ def merge_data():
 
     return df
 
-def merge_convert(file):
+
+def merge_convert():
     """ Merge all DataFrames and convert currencies."""
     df = merge_data()
     df = conversion(df)
 
-    df.to_csv(file, index=False)
+    df.to_csv("../dat/data_clean.csv", index=False)
     print("File saved!")
+
+
+if __name__ == "__main__":
+    merge_convert()

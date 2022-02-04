@@ -5,7 +5,7 @@ from scrapy.crawler import CrawlerProcess
 def main():
     process = CrawlerProcess(settings={
         "BOT_NAME": "imdb_spider",
-        "SPIDER_MODULES": "src.imdb_scraper.imdb_spider.spiders",
+        "SPIDER_MODULES": "imdb_scraper.imdb_spider.spiders",
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36",
         "ROBOTSTXT_OBEY": True,
         "DOWNLOAD_DELAY": 1.5,
