@@ -9,7 +9,7 @@ import pandas as pd
 import sys
 
 sys.path.insert(0, "../src/")
-from eval_deep_models import make_prediction_data, train_model_variants
+from eval_models import make_prediction_data, train_model_variants
 
 
 def set_size(width_pt, fraction=1, subplots=(1, 1)):
