@@ -45,7 +45,9 @@ class LinearRegression:
         transformed_preds = test_set_normalized @ self.w
         preds = 9 * 1 / (1 + torch.exp(-transformed_preds)) + 1
 
-        return (test_targets - preds).abs().mean()
+        loss = (test_targets - preds).abs().mean().item()
+        print("Test loss:", loss)
+        return loss
 
     def fit(self):
         self.w = torch.linalg.pinv(self.train_set_normalized) @ self.train_targets
@@ -62,10 +64,10 @@ class DeepReLU(nn.Module):
 
         if num_layers > 2:
             for i in range(num_layers - 2):
-                self.inner_layers.append(nn.Linear(self.hidden_dim, self.hidden_dim))
+                self.inner_layers.append(nn.Linear(self.hidden_dim, self.hidden_dim, dtype=torch.double))
                 self.inner_layers.append(nn.ReLU())
 
-            self.inner_layers = nn.Sequential(self.inner_layers)
+            self.inner_layers = nn.Sequential(*self.inner_layers)
         else:
             self.inner_layers = None
 
@@ -90,6 +92,7 @@ def train_model_variants(
 ):
     result_dict = {}
 
+    print("Logistic Regression, MAE")
     mae_results = train_logistic_regression(
         nn.L1Loss(),
         train_set_normalized,
@@ -99,6 +102,7 @@ def train_model_variants(
         test_set_normalized,
         test_targets,
     )
+    print("Logistic Regression, MSE")
     mse_results = train_logistic_regression(
         nn.MSELoss(),
         train_set_normalized,
@@ -108,6 +112,7 @@ def train_model_variants(
         test_set_normalized,
         test_targets,
     )
+    print("Logistic Regression, BCE")
     bce_results = train_logistic_regression(
         nn.BCELoss(),
         train_set_normalized,
@@ -119,11 +124,15 @@ def train_model_variants(
         is_bce=True,
     )
 
+    print("Linear Regression")
     lin_reg = LinearRegression(train_set_normalized, train_targets)
     lin_reg_results = lin_reg.eval(test_set_normalized, test_targets)
 
+
+    print("2-layer ReLU, MAE")
     relu_2_results = train_deep_model(
         2,
+        0.003,
         train_set_normalized,
         train_targets,
         val_set_normalized,
@@ -131,8 +140,11 @@ def train_model_variants(
         test_set_normalized,
         test_targets,
     )
+
+    print("4-layer ReLU, MAE")
     relu_4_results = train_deep_model(
         4,
+        0.01,
         train_set_normalized,
         train_targets,
         val_set_normalized,
@@ -140,8 +152,11 @@ def train_model_variants(
         test_set_normalized,
         test_targets,
     )
+
+    print("6-layer ReLU, MAE")
     relu_6_results = train_deep_model(
         6,
+        0.03,
         train_set_normalized,
         train_targets,
         val_set_normalized,
@@ -181,7 +196,7 @@ def train_logistic_regression(
     val_fn = nn.L1Loss()
     opt = torch.optim.SGD(model.parameters(), lr=0.001)
 
-    prev_loss = np.inf
+    prev_loss_in_mae = np.inf
     test_loss = None
 
     prev_val_loss = np.inf
@@ -190,12 +205,17 @@ def train_logistic_regression(
         model.layer1.weight.grad is None
         or (torch.norm(model.layer1.weight.grad) ** 2 + model.layer1.bias.grad ** 2)
         / 27
-        >= 1e-4
+        >= 1e-6
     ):
         pred = model(train_set_normalized)
         loss = loss_fn(pred.squeeze(), train_targets)
 
         with torch.no_grad():
+            if is_bce:
+                loss_in_mae = val_fn(pred.squeeze() * 9 + 1, train_targets * 9 + 1)
+            else:
+                loss_in_mae = val_fn(pred.squeeze(), train_targets)
+
             val_pred = model(val_set_normalized)
 
             if is_bce:
@@ -204,9 +224,9 @@ def train_logistic_regression(
                 val_loss = val_fn(val_pred.squeeze(), val_targets)
 
             if val_loss.item() > prev_val_loss:  # Early stopping, patience 0.
-                print("Training loss:", prev_loss.item())
-                print("Test_loss:", test_loss.item())
-                return prev_loss.item(), test_loss.item(), test_pred.squeeze().numpy()
+                print("Training loss (MAE):", prev_loss_in_mae.item())
+                print("Test loss (MAE):", test_loss.item())
+                return prev_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
             else:
                 test_pred = model(test_set_normalized)
 
@@ -221,9 +241,11 @@ def train_logistic_regression(
         opt.step()
         epoch += 1
 
-        prev_loss = loss
+        prev_loss_in_mae = loss_in_mae
 
-    return prev_loss.item(), test_loss.item(), test_pred.squeeze().numpy()
+    print("Training loss (MAE):", prev_loss_in_mae.item())
+    print("Test loss (MAE):", test_loss.item())
+    return prev_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
 
 
 def train_deep_model(
@@ -237,10 +259,11 @@ def train_deep_model(
     test_targets,
 ):
     model = DeepReLU(num_layers)
-    loss_fn = nn.L1Loss()
+    loss_fn = nn.MSELoss()
+    val_fn = nn.L1Loss()
     opt = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=1e-2)
 
-    prev_loss = np.inf
+    prev_loss_in_mae = np.inf
     test_loss = None
 
     prev_val_loss = np.inf
@@ -249,16 +272,17 @@ def train_deep_model(
         loss = loss_fn(pred.squeeze(), train_targets)
 
         with torch.no_grad():
+            loss_in_mae = val_fn(pred.squeeze(), train_targets)
             val_pred = model(val_set_normalized)
-            val_loss = loss_fn(val_pred.squeeze(), val_targets)
+            val_loss = val_fn(val_pred.squeeze(), val_targets)
 
             if val_loss.item() > prev_val_loss:  # Early stopping, patience 0.
-                print("Training loss:", prev_loss.item())
-                print("Test_loss:", test_loss.item())
-                return prev_loss.item(), test_loss.item(), test_pred
+                print("Training loss (MAE):", prev_loss_in_mae.item())
+                print("Test loss (MAE):", test_loss.item())
+                return prev_loss_in_mae.item(), test_loss.item(), test_pred
             else:
                 test_pred = model(test_set_normalized)
-                test_loss = loss_fn(test_pred.squeeze() * 9 + 1, test_targets)
+                test_loss = val_fn(test_pred.squeeze(), test_targets)
 
                 prev_val_loss = val_loss.item()
 
@@ -266,9 +290,11 @@ def train_deep_model(
         loss.backward()
         opt.step()
 
-        prev_loss = loss
+        prev_loss_in_mae = loss_in_mae
 
-    return prev_loss.item(), test_loss.item(), test_pred
+    print("Training loss (MAE):", prev_loss_in_mae.item())
+    print("Test loss (MAE):", test_loss.item())
+    return prev_loss_in_mae.item(), test_loss.item(), test_pred
 
 
 def _clean_unknowns(row, column):
@@ -338,7 +364,6 @@ def make_prediction_data(full_dataset):
         "Action": ["Western", "Action"],
     }
     for genre in genre_set:
-        print(genre, end=" ")
         if genre not in transformation_dict:
             transformation_dict[genre] = [genre]
         full_dataset[f"is{genre}"] = full_dataset.apply(
@@ -382,31 +407,32 @@ def make_prediction_data(full_dataset):
         full_dataset[column] = pd.to_numeric(full_dataset[column])
 
     filtered = full_dataset.dropna()
+    filtered.reset_index(inplace=True)
+    filtered = filtered.drop(columns=["index"])
 
     test_indices = np.random.choice(
-        len(filtered), replace=False, size=int(len(filtered) / 20)
+        len(filtered), replace=False, size=int(len(filtered) / 10)
     )
-
     test_set = filtered.iloc[test_indices]
     test_set, test_targets = (
         test_set.drop("averageRating", axis=1).to_numpy(),
         test_set["averageRating"].to_numpy(),
     )
-    train_set = filtered.iloc[~test_indices]
+    train_set = filtered.iloc[~filtered.index.isin(test_indices)]
     train_set, train_targets = (
         train_set.drop("averageRating", axis=1).to_numpy(),
         train_set["averageRating"].to_numpy(),
     )
-
     val_indices = np.random.choice(
         len(train_set), replace=False, size=int(len(train_set) / 10)
     )
 
-    train_set = train_set.iloc[~val_indices]
-    train_targets = train_targets[~val_indices]
-
-    val_set = train_set.iloc[val_indices]
+    val_set = train_set[val_indices]
     val_targets = train_targets[val_indices]
+
+    not_val_indices = [i for i in range(len(train_set)) if i not in val_indices]
+    train_set = train_set[not_val_indices]
+    train_targets = train_targets[not_val_indices]
 
     test_set = torch.from_numpy(test_set)
     test_set_normalized = (
@@ -435,3 +461,19 @@ def make_prediction_data(full_dataset):
         (test_set_normalized, test_targets),
     )
 
+if __name__ == "__main__":
+    data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
+    (
+        (train_set_normalized, train_targets),
+        (val_set_normalized, val_targets),
+        (test_set_normalized, test_targets),
+    ) = make_prediction_data(data)
+    result_dict = train_model_variants(train_set_normalized, train_targets, val_set_normalized, val_targets, test_set_normalized, test_targets)
+    for key in result_dict:
+        if key == "LR":
+            continue
+        result_dict[key] = (result_dict[key][0], result_dict[key][1])
+
+    del result_dict["ground_truth"]
+
+    print(result_dict)
