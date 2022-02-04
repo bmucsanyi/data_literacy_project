@@ -1,3 +1,4 @@
+"""Interface to our IMDb scraper."""
 from scrapy.crawler import CrawlerProcess
 
 

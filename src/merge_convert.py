@@ -2,7 +2,7 @@ import pandas as pd
 from currency_conversion import convert_column
 
 def conversion(df):
-    """ converts:
+    """convert:
             
             -Budget 
             -Gross US & Canada
@@ -26,9 +26,7 @@ def conversion(df):
     return df
 
 def merge_data():
-    """ Merges several IMDb pd.DataFrame's with the scraped data"""
-
-    
+    """Merge several IMDb pd.DataFrame's with the scraped data."""
     # Read the basic data frame of IMDb
     df = pd.read_csv("../dat/imdb_data/title_basics/data.tsv", sep="\t", dtype={4: 'object', 5: 'object'})
     print("overall: ", len(df.index))
@@ -49,7 +47,6 @@ def merge_data():
 
     # Free up some memory
     del df_reviews
-
 
     # Read in our scraped data
     df_scrape = pd.read_csv("../dat/tconst_scraped_data.csv", dtype={6: 'object', 7: 'object'})
@@ -104,7 +101,6 @@ def merge_data():
     df["tconst"] = df["tconst"].astype(str)
     df_scrape["tconst"] = df_scrape["tconst"].astype(str)
 
-
     # Merge the data frame and the scraped content
     df = df.merge(df_scrape, how="inner", on="tconst")
     print("Number of movies after merge:\t", df.shape[0])
@@ -122,7 +118,6 @@ def merge_data():
     df = df.merge(df_crew, how="inner", on="tconst")
     print("Number of movies after crew merge:\t", len(df))
 
-
     # Free up some memory
     del df_crew
 
@@ -132,10 +127,7 @@ def merge_data():
     return df
 
 def merge_convert(file):
-    """ 
-    Meging of all DataFrames & Currency Conversion
-    """ 
-
+    """ Merge all DataFrames and convert currencies."""
     df = merge_data()
     df = conversion(df)
 

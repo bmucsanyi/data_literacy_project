@@ -1,10 +1,9 @@
+"""Interface to our preprocessing routines."""
 import argparse
 from src.merge_convert import merge_convert
 
 def main():
-    """ 
-    Meging of all DataFrames & Currency Conversion
-    """ 
+    """ Merge all DataFrames and convert currencies.""" 
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--file', 

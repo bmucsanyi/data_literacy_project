@@ -3,24 +3,53 @@ from matplotlib import pyplot as plt
 import numpy as np
 from fig_1 import set_size
 from tueplots import fontsizes
+import sys
+
+sys.path.insert(0, "../src/")
+from test_hypotheses import make_hypothesis_data, run_hypothesis_test
+import pandas as pd
 
 
 def make_plot():
     # Options
-    params = {"text.latex.preamble":r"\usepackage{lmodern}", "text.usetex": True, "font.size": 9, "font.family": "sans"}
+    params = {
+        "text.latex.preamble": r"\usepackage{lmodern}",
+        "text.usetex": True,
+        "font.size": 9,
+        "font.family": "sans",
+    }
     plt.rcParams.update(params)
     plt.rcParams.update(fontsizes.neurips2021())
 
-    years = np.load("../dat/data_fig2/years.npy")
-    n = np.load("../dat/data_fig2/num_movies.npy")
-    lst = np.load("../dat/data_fig2/flop_rate.npy")
+    data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
+    filtered = make_hypothesis_data(data)
+    p_value, n_1, m_0, n_0 = run_hypothesis_test(1910, 2020, filtered)
+    print(p_value)
 
-    hypotest_data = np.load("../dat/data_fig2/hypotest_data.npy")
+    m_2020 = len(
+        filtered[
+            (filtered["startYear"] == 2020)
+            & (filtered["Budget"] > filtered["Gross worldwide"])
+        ]
+    )
 
-    n_1 = hypotest_data[0]
-    m_0 = hypotest_data[1]
-    n_0 = hypotest_data[2]
-    m_2020 = hypotest_data[3]
+    lst = []
+    years = []
+    n = []
+    for year in range(1960, 2022):
+        if len(filtered[filtered["startYear"] == year]) == 0:
+            continue
+        years.append(year)
+        lst.append(
+            len(
+                filtered[
+                    (filtered["startYear"] == year)
+                    & (filtered["Budget"] > filtered["Gross worldwide"])
+                ]
+            )
+            / len(filtered[filtered["startYear"] == year])
+        )
+        n.append(len(filtered[(filtered["startYear"] == year)]))
 
     p = betabinom(n_1, m_0 + 1, n_0 - m_0 + 1)
     mm_1 = np.arange(n_1)
@@ -81,15 +110,22 @@ def make_plot():
         color=color2,
     )
 
-    ax[0].set_ylabel("$p(m \hspace{0.25em}| \hspace{0.25em}H_0)$")
+    ax[0].set_ylabel("$p(m \mid H_0)$")
     ax[0].set_xlabel("$m$")
     ax[0].set_xlim(90, 140 + 50)
     ax[0].set_ylim(0, 0.055)
 
-    plt.savefig("../dat/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True)
     plt.savefig(
-        "../dat/fig2.png", bbox_inches="tight", pad_inches=0.0, facecolor="white", dpi=1000
+        "../dat/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True
     )
+    plt.savefig(
+        "../dat/fig2.png",
+        bbox_inches="tight",
+        pad_inches=0.0,
+        facecolor="white",
+        dpi=1000,
+    )
+
 
 if __name__ == "__main__":
     make_plot()
