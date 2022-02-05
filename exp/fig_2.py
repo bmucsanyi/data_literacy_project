@@ -63,10 +63,25 @@ def make_plot():
 
     ax[1].yaxis.tick_right()
     ax[1].yaxis.set_label_position("right")
-    ax[1].plot(years, n, color=color2, linewidth=linewidth, marker="o", markersize=1.5, label="\#total")
+    ax[1].plot(
+        years,
+        n,
+        color=color2,
+        linewidth=linewidth,
+        marker="o",
+        markersize=1.5,
+        label="\#total",
+    )
     ax[1].set_title("(b) Movies \& Flop-Rates")
-    ax[1].plot(years, lst, color=color1, linewidth=linewidth, marker="o", markersize=1.5, label="\#flops")
-
+    ax[1].plot(
+        years,
+        lst,
+        color=color1,
+        linewidth=linewidth,
+        marker="o",
+        markersize=1.5,
+        label="\#flops",
+    )
 
     ax[1].set_ylim(0, 800)
     ax[1].set_xlim(2000, 2021)
@@ -77,8 +92,9 @@ def make_plot():
     ax[1].axvline(2020, color="C3", linestyle=":", linewidth=0.75, zorder=-1)
     ax[1].legend(frameon=False, handlelength=1.5)
 
-    ax[1].fill_between(years, 0, 800, where=np.array(years) >= 2020,
-                facecolor='C3', alpha=0.25)
+    ax[1].fill_between(
+        years, 0, 800, where=np.array(years) >= 2020, facecolor="C3", alpha=0.25
+    )
 
     ax[1].text(
         2020.57,
@@ -91,8 +107,6 @@ def make_plot():
         color="C3",
     )
 
-
-
     mm_1_nr = mm_1[mm_1 <= betabinom.ppf(0.95, n_1, m_0 + 1, n_0 - m_0 + 1)]
     ax[0].step(mm_1_nr, p.pmf(mm_1_nr), color="#deb522", linewidth=0.75)
     ax[0].fill_between(
@@ -103,8 +117,6 @@ def make_plot():
     ax[0].step(mm_1_nr, p.pmf(mm_1_nr), color="black", alpha=0.5, linewidth=0.75)
     ax[0].fill_between(mm_1_nr, 0, p.pmf(mm_1_nr), step="pre", color="black", alpha=0.5)
     ax[0].axvline(min(mm_1_nr), color="black", linestyle="-", linewidth=0.75)
-
-
 
     ax[0].set_title("(a) Hypothesis-Test")
     ax[0].annotate(
@@ -130,7 +142,7 @@ def make_plot():
 
     ax[0].set_ylabel("$p(m \hspace{0.25em}| \hspace{0.25em}H_0)$")
     ax[0].set_xlabel("$m$")
-    ax[0].set_xlim(90, 140+50)
+    ax[0].set_xlim(90, 140 + 50)
     ax[0].set_ylim(0, 0.055)
 
     plt.savefig(

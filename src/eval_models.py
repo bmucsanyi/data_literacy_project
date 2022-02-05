@@ -64,7 +64,9 @@ class DeepReLU(nn.Module):
 
         if num_layers > 2:
             for i in range(num_layers - 2):
-                self.inner_layers.append(nn.Linear(self.hidden_dim, self.hidden_dim, dtype=torch.double))
+                self.inner_layers.append(
+                    nn.Linear(self.hidden_dim, self.hidden_dim, dtype=torch.double)
+                )
                 self.inner_layers.append(nn.ReLU())
 
             self.inner_layers = nn.Sequential(*self.inner_layers)
@@ -127,7 +129,6 @@ def train_model_variants(
     print("Linear Regression")
     lin_reg = LinearRegression(train_set_normalized, train_targets)
     lin_reg_results = lin_reg.eval(test_set_normalized, test_targets)
-
 
     print("2-layer ReLU, MAE")
     relu_2_results = train_deep_model(
@@ -226,7 +227,6 @@ def train_logistic_regression(
             else:
                 val_loss = val_fn(val_pred.squeeze(), val_targets)
 
-
             if val_loss.item() < best_val_loss:
                 test_pred = model(test_set_normalized)
 
@@ -238,22 +238,21 @@ def train_logistic_regression(
                 best_val_loss = val_loss.item()
                 best_loss_in_mae = loss_in_mae
                 patience_counter = 0
-
-
             else:
                 patience_counter += 0
                 if patience_counter >= max_patience:
                     print("Training loss (MAE):", best_loss_in_mae.item())
                     print("Test loss (MAE):", test_loss.item())
-                    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
-
+                    return (
+                        best_loss_in_mae.item(),
+                        test_loss.item(),
+                        test_pred.squeeze().numpy(),
+                    )
 
         opt.zero_grad()
         loss.backward()
         opt.step()
         epoch += 1
-
-        
 
     print("Training loss (MAE):", best_loss_in_mae.item())
     print("Test loss (MAE):", test_loss.item())
@@ -283,9 +282,7 @@ def train_deep_model(
 
     best_val_loss = np.inf
 
-
-
-    for _ in range(10000): #10000
+    for _ in range(10000):  # 10000
         pred = model(train_set_normalized)
         loss = loss_fn(pred.squeeze(), train_targets)
 
@@ -295,25 +292,26 @@ def train_deep_model(
             val_loss = val_fn(val_pred.squeeze(), val_targets)
 
             if val_loss.item() < best_val_loss:
-                
+
                 test_pred = model(test_set_normalized)
                 test_loss = val_fn(test_pred.squeeze(), test_targets)
                 best_loss_in_mae = loss_in_mae
                 best_val_loss = val_loss.item()
                 patience_counter = 0
-
             else:
-
                 patience_counter += 1
                 if patience_counter >= max_patience:
                     print("Training loss (MAE):", best_loss_in_mae.item())
                     print("Test loss (MAE):", test_loss.item())
-                    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
+                    return (
+                        best_loss_in_mae.item(),
+                        test_loss.item(),
+                        test_pred.squeeze().numpy(),
+                    )
 
         opt.zero_grad()
         loss.backward()
         opt.step()
-
 
     print("Training loss (MAE):", best_loss_in_mae.item())
     print("Test loss (MAE):", test_loss.item())
@@ -484,6 +482,7 @@ def make_prediction_data(full_dataset):
         (test_set_normalized, test_targets),
     )
 
+
 if __name__ == "__main__":
     data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
     (
@@ -491,7 +490,14 @@ if __name__ == "__main__":
         (val_set_normalized, val_targets),
         (test_set_normalized, test_targets),
     ) = make_prediction_data(data)
-    result_dict = train_model_variants(train_set_normalized, train_targets, val_set_normalized, val_targets, test_set_normalized, test_targets)
+    result_dict = train_model_variants(
+        train_set_normalized,
+        train_targets,
+        val_set_normalized,
+        val_targets,
+        test_set_normalized,
+        test_targets,
+    )
     for key in result_dict:
         if key == "LR":
             continue

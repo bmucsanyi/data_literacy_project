@@ -3,13 +3,16 @@ import pandas as pd
 
 
 def _clean_unknowns(row, column):
-        if row[column] == "\\N":
-            return None
-        else:
-            return row[column]
+    if row[column] == "\\N":
+        return None
+    else:
+        return row[column]
+
 
 def make_hypothesis_data(full_dataset):
-    full_dataset["startYear"] = full_dataset.apply(lambda row: _clean_unknowns(row, "startYear"), axis=1)
+    full_dataset["startYear"] = full_dataset.apply(
+        lambda row: _clean_unknowns(row, "startYear"), axis=1
+    )
     full_dataset["startYear"] = pd.to_numeric(full_dataset["startYear"])
 
     filtered = full_dataset[
@@ -17,6 +20,7 @@ def make_hypothesis_data(full_dataset):
     ].dropna()
 
     return filtered
+
 
 def run_hypothesis_test(earliest_year, actual_year, dataset):
     n_1 = len(dataset[dataset["startYear"] == actual_year])
