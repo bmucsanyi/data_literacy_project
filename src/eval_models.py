@@ -144,7 +144,7 @@ def train_model_variants(
     print("4-layer ReLU, MAE")
     relu_4_results = train_deep_model(
         4,
-        0.01,
+        0.003,
         train_set_normalized,
         train_targets,
         val_set_normalized,
@@ -156,7 +156,7 @@ def train_model_variants(
     print("6-layer ReLU, MAE")
     relu_6_results = train_deep_model(
         6,
-        0.03,
+        0.003,
         train_set_normalized,
         train_targets,
         val_set_normalized,
@@ -196,10 +196,13 @@ def train_logistic_regression(
     val_fn = nn.L1Loss()
     opt = torch.optim.SGD(model.parameters(), lr=0.001)
 
-    prev_loss_in_mae = np.inf
+    best_loss_in_mae = np.inf
     test_loss = None
 
-    prev_val_loss = np.inf
+    patience_counter = 0
+    max_patience = 10
+
+    best_val_loss = np.inf
     epoch = 0
     while (
         model.layer1.weight.grad is None
@@ -223,29 +226,38 @@ def train_logistic_regression(
             else:
                 val_loss = val_fn(val_pred.squeeze(), val_targets)
 
-            if val_loss.item() > prev_val_loss:  # Early stopping, patience 0.
-                print("Training loss (MAE):", prev_loss_in_mae.item())
-                print("Test loss (MAE):", test_loss.item())
-                return prev_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
-            else:
+
+            if val_loss.item() < best_val_loss:
                 test_pred = model(test_set_normalized)
 
                 if is_bce:
                     test_loss = val_fn(test_pred.squeeze() * 9 + 1, test_targets)
                 else:
                     test_loss = val_fn(test_pred.squeeze(), test_targets)
-                prev_val_loss = val_loss.item()
+
+                best_val_loss = val_loss.item()
+                best_loss_in_mae = loss_in_mae
+                patience_counter = 0
+
+
+            else:
+                patience_counter += 0
+                if patience_counter >= max_patience:
+                    print("Training loss (MAE):", best_loss_in_mae.item())
+                    print("Test loss (MAE):", test_loss.item())
+                    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
+
 
         opt.zero_grad()
         loss.backward()
         opt.step()
         epoch += 1
 
-        prev_loss_in_mae = loss_in_mae
+        
 
-    print("Training loss (MAE):", prev_loss_in_mae.item())
+    print("Training loss (MAE):", best_loss_in_mae.item())
     print("Test loss (MAE):", test_loss.item())
-    return prev_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
+    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
 
 
 def train_deep_model(
@@ -263,11 +275,17 @@ def train_deep_model(
     val_fn = nn.L1Loss()
     opt = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=1e-2)
 
-    prev_loss_in_mae = np.inf
+    best_loss_in_mae = np.inf
     test_loss = None
 
-    prev_val_loss = np.inf
-    for _ in range(10000):
+    patience_counter = 0
+    max_patience = 100
+
+    best_val_loss = np.inf
+
+
+
+    for _ in range(10000): #10000
         pred = model(train_set_normalized)
         loss = loss_fn(pred.squeeze(), train_targets)
 
@@ -276,25 +294,30 @@ def train_deep_model(
             val_pred = model(val_set_normalized)
             val_loss = val_fn(val_pred.squeeze(), val_targets)
 
-            if val_loss.item() > prev_val_loss:  # Early stopping, patience 0.
-                print("Training loss (MAE):", prev_loss_in_mae.item())
-                print("Test loss (MAE):", test_loss.item())
-                return prev_loss_in_mae.item(), test_loss.item(), test_pred
-            else:
+            if val_loss.item() < best_val_loss:
+                
                 test_pred = model(test_set_normalized)
                 test_loss = val_fn(test_pred.squeeze(), test_targets)
+                best_loss_in_mae = loss_in_mae
+                best_val_loss = val_loss.item()
+                patience_counter = 0
 
-                prev_val_loss = val_loss.item()
+            else:
+
+                patience_counter += 1
+                if patience_counter >= max_patience:
+                    print("Training loss (MAE):", best_loss_in_mae.item())
+                    print("Test loss (MAE):", test_loss.item())
+                    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
 
         opt.zero_grad()
         loss.backward()
         opt.step()
 
-        prev_loss_in_mae = loss_in_mae
 
-    print("Training loss (MAE):", prev_loss_in_mae.item())
+    print("Training loss (MAE):", best_loss_in_mae.item())
     print("Test loss (MAE):", test_loss.item())
-    return prev_loss_in_mae.item(), test_loss.item(), test_pred
+    return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
 
 
 def _clean_unknowns(row, column):

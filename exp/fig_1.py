@@ -12,6 +12,21 @@ sys.path.insert(0, "../src/")
 from eval_models import make_prediction_data, train_model_variants
 
 
+from operator import sub
+def get_aspect(ax):
+    # Total figure size
+    figW, figH = ax.get_figure().get_size_inches()
+    # Axis size on figure
+    _, _, w, h = ax.get_position().bounds
+    # Ratio of display units
+    disp_ratio = (figH * h) / (figW * w)
+    # Ratio of data units
+    # Negative over negative because of the order of subtraction
+    data_ratio = sub(*ax.get_ylim()) / sub(*ax.get_xlim())
+
+    return disp_ratio / data_ratio
+
+
 def set_size(width_pt, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to sit nicely in our document.
 
@@ -60,6 +75,7 @@ def scatter_hist(x1, x2, y, ax1, ax2, ax_histx1, ax_histx2, ax_histy):
     vmin, vmax = 0, 2
 
     normalize = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+
     sc1 = ax1.scatter(
         x1[x1_sort_idx[::-1]],
         y[x1_sort_idx[::-1]],
@@ -77,25 +93,27 @@ def scatter_hist(x1, x2, y, ax1, ax2, ax_histx1, ax_histx2, ax_histy):
         s=3,
     )
 
-    cbar = plt.colorbar(sc1, use_gridspec=True, ticks=[0, 0.5, 1, 1.5, 2])
+    cbar = plt.colorbar(sc1, use_gridspec=True, ticks=[0, 0.5, 1, 1.5, 2], fraction=0.3, pad=0.0)
     cbar.ax.set_yticklabels(["0", "0.5", "1", "1.5", "$>2$"])
     cbar.ax.set_ylabel("Absolute Error")
 
-    ax1.set_xlim([3, 9.5])
-    ax2.set_xlim([3, 9.5])
+
+
+    ax1.set_xlim([1.0, 9.5])
+    ax2.set_xlim([1.0, 9.5])
     ax1.set_ylim([1.0, 9.5])
     ax2.set_ylim([1.0, 9.5])
 
-    ax_histy.set_ylim([1.5, 9.5])
+    ax_histy.set_ylim([1.0, 9.5])
 
-    ax1.set_xticks(ticks=[4, 6, 8], labels=None)
-    ax2.set_xticks(ticks=[4, 6, 8], labels=None)
+    ax1.set_xticks(ticks=[2, 4, 6, 8], labels=None)
+    ax2.set_xticks(ticks=[2, 4, 6, 8], labels=None)
     ax1.set_yticks(ticks=[2, 4, 6, 8], labels=None)
     ax2.set_yticks([])
 
     ax1.set_ylabel("True Ratings")
-    ax1.set_xlabel("(a) Logistic Regression - MAE")
-    ax2.set_xlabel("(2) ReLU-Net - Depth 6")
+    ax1.set_xlabel("Logistic Regr. Prediction")
+    ax2.set_xlabel("ReLU-Net-6 Prediction")
 
     bins = 25
 
@@ -136,12 +154,23 @@ def make_plot():
     plt.rcParams.update(params)
     plt.rcParams.update(fontsizes.neurips2021())
 
+    #from_memory = False
+
+    # if from_memory:
+
+    #     x1 = np.load("../dat/data_fig1/pred_lr.npy")
+    #     x2 = np.load("../dat/data_fig1/pred_relu.npy")
+    #     y = np.load("../dat/data_fig1/true_ratings.npy")
+
+    # else:
     data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
     (
         (train_set_normalized, train_targets),
         (val_set_normalized, val_targets),
         (test_set_normalized, test_targets),
     ) = make_prediction_data(data)
+
+
     result_dict = train_model_variants(
         train_set_normalized,
         train_targets,
@@ -154,24 +183,43 @@ def make_plot():
     x1 = result_dict["MAE"][2]
     x2 = result_dict["RELU6"][2]
     y = result_dict["ground_truth"]
+       
+
 
     # start with a square Figure
     # fig = plt.figure(figsize=(4, 4)) 5.499999861629998, 2.266124568404705
+    size = set_size(397.48499, fraction=1, subplots=(1.5, 2.5))
+    print(size)
     _, ax = plt.subplots(
         2,
         3,
-        gridspec_kw={"height_ratios": [0.15, 0.5], "width_ratios": [0.5, 0.5, 0.1]},
-        figsize=set_size(397.48499, fraction=1, subplots=(1.5, 2.5)),
+        gridspec_kw={"height_ratios": [0.08, 0.3], "width_ratios": [0.3, 0.3, 0.08]},
+        figsize=(size[0]*0.8,3.0*.8),
     )
 
+    
+
+    #ax[1, 0].set_aspect(1, anchor="SE")
+    #ax[1, 1].set_aspect(1, anchor="SE")
+    
     ax[1, 0].get_shared_x_axes().join(ax[1, 0], ax[1, 1], ax[0, 0], ax[0, 1])
     ax[1, 0].get_shared_y_axes().join(ax[1, 0], ax[1, 1])
     ax[0, 0].get_shared_y_axes().join(ax[0, 0], ax[0, 1])
 
+
+
     ax[0, 2].axis("off")
+
+    
     scatter_hist(x1, x2, y, ax[1, 0], ax[1, 1], ax[0, 0], ax[0, 1], ax[1, 2])
 
+    
+
+    #plt.axis('equal')
+
     plt.subplots_adjust(wspace=0, hspace=0)
+
+    print(get_aspect(ax[1, 0]))
 
     # 397.48499p
     plt.savefig(
@@ -190,7 +238,6 @@ def make_plot():
         facecolor="white",
         dpi=1000,
     )
-
 
 if __name__ == "__main__":
     make_plot()
