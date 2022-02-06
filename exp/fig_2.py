@@ -146,10 +146,10 @@ def make_plot():
     ax[0].set_ylim(0, 0.055)
 
     plt.savefig(
-        "../dat/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True
+        "../doc/gfx/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True
     )
     plt.savefig(
-        "../dat/fig2.png",
+        "../doc/gfx/fig2.png",
         bbox_inches="tight",
         pad_inches=0.0,
         facecolor="white",

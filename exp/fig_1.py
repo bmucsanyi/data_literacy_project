@@ -231,9 +231,10 @@ def make_plot():
     print("y", bbox.width, bbox.height)
 
 
+    # The gfx folder needs to exist
     # 397.48499p
     plt.savefig(
-        "../dat/fig1.pdf",
+        "../doc/gfx/fig1.pdf",
         # This is simple recomendation for publication plots
         dpi=1000,
         # Plot will occupy all of available space
@@ -242,7 +243,7 @@ def make_plot():
     )
 
     plt.savefig(
-        "../dat/fig1.png",
+        "../doc/gfx/fig1.png",
         bbox_inches="tight",
         pad_inches=0.0,
         facecolor="white",

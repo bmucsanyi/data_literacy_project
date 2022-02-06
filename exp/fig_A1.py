@@ -26,7 +26,7 @@ def make_plot():
 
     fig.tight_layout()
 
-    plt.savefig("../dat/figA1.pdf")
+    plt.savefig("../doc/gfx/figA1.pdf")
     plt.show()
 
 
