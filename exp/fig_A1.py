@@ -10,9 +10,9 @@ def make_plot():
     data = pd.read_csv("../dat/data_clean.csv", dtype={5: "object", 16: "object"})
     filtered = make_hypothesis_data(data)
 
-    fig, ax = plt.subplots(20, 1, figsize=(5, 4 * 20))
+    fig, ax = plt.subplots(21, 1, figsize=(5, 4 * 20))
 
-    for actual_year in range(2000, 2020):
+    for actual_year in range(2000, 2021):
         p_values = run_hypothesis_tests(actual_year, filtered)
 
         ax[actual_year - 2000].plot(list(range(1910, actual_year)), p_values)
