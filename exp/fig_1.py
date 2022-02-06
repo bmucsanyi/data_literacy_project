@@ -115,8 +115,8 @@ def scatter_hist(x1, x2, y, ax1, ax2, ax_histx1, ax_histx2, ax_histy):
     ax2.set_yticks([])
 
     ax1.set_ylabel("True Ratings")
-    ax1.set_xlabel("Logistic Regr. Prediction")
-    ax2.set_xlabel("ReLU-Net-6 Prediction")
+    ax1.set_xlabel("Logistic Regression Pred.")
+    ax2.set_xlabel("ReLU-Net-6 Pred.")
 
     bins = 25
 
@@ -186,7 +186,7 @@ def make_plot():
             test_targets,
         )
 
-        x1 = result_dict["MAE"][2]
+        x1 = result_dict["MSE"][2]
         x2 = result_dict["RELU6"][2]
         y = result_dict["ground_truth"]
 

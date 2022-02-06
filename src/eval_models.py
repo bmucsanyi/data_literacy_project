@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import random
 
+# Torch doesn't gurantee determinsm even with seeds and our configuration
 torch.manual_seed(42)
 random.seed(42)
 np.random.seed(42)

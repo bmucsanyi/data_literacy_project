@@ -72,7 +72,7 @@ def make_plot():
         markersize=1.5,
         label="\#total",
     )
-    ax[1].set_title("(b) Movies \& Flop-Rates")
+    ax[1].set_title("(b) Number of Movies \& Flops")
     ax[1].plot(
         years,
         lst,
