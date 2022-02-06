@@ -239,7 +239,7 @@ def train_logistic_regression(
                 best_loss_in_mae = loss_in_mae
                 patience_counter = 0
             else:
-                patience_counter += 0
+                patience_counter += 1
                 if patience_counter >= max_patience:
                     print("Training loss (MAE):", best_loss_in_mae.item())
                     print("Test loss (MAE):", test_loss.item())
