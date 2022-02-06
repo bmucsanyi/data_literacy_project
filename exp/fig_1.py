@@ -8,6 +8,7 @@ import matplotlib.font_manager
 from matplotlib.colors import LinearSegmentedColormap
 import pandas as pd
 import sys
+import os
 
 sys.path.insert(0, "../src/")
 from eval_models import make_prediction_data, train_model_variants
@@ -231,7 +232,7 @@ def make_plot():
     print("y", bbox.width, bbox.height)
 
 
-    # The gfx folder needs to exist
+    os.makedirs("../doc/gfx", exist_ok=True)
     # 397.48499p
     plt.savefig(
         "../doc/gfx/fig1.pdf",

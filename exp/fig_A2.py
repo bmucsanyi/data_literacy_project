@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import numpy as np
 from scipy.stats import betabinom
+import os
 
 sys.path.insert(0, "../src/")
 from test_hypotheses import make_hypothesis_data, run_hypothesis_test
@@ -53,6 +54,7 @@ def make_plot():
 
     fig.tight_layout()
 
+    os.makedirs("../doc/gfx", exist_ok=True)
     plt.savefig("../doc/gfx/figA2.pdf")
     plt.show()
 

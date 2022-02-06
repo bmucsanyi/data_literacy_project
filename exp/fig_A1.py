@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import pandas as pd
 import sys
+import os
 
 sys.path.insert(0, "../src/")
 from test_hypotheses import make_hypothesis_data, run_hypothesis_tests
@@ -26,6 +27,7 @@ def make_plot():
 
     fig.tight_layout()
 
+    os.makedirs("../doc/gfx", exist_ok=True)
     plt.savefig("../doc/gfx/figA1.pdf")
     plt.show()
 

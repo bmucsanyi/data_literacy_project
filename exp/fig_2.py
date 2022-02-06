@@ -4,6 +4,7 @@ import numpy as np
 from fig_1 import set_size
 from tueplots import fontsizes
 import sys
+import os
 
 sys.path.insert(0, "../src/")
 from test_hypotheses import make_hypothesis_data, run_hypothesis_test
@@ -145,6 +146,7 @@ def make_plot():
     ax[0].set_xlim(90, 140 + 50)
     ax[0].set_ylim(0, 0.055)
 
+    os.makedirs("../doc/gfx", exist_ok=True)
     plt.savefig(
         "../doc/gfx/fig2.pdf", bbox_inches="tight", pad_inches=0.0, transparent=True
     )
