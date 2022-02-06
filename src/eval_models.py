@@ -1,3 +1,6 @@
+"""Collection of models used. scikit-learn does not allow setting custom
+loss functions or having non-binary targets, thus we implemented the models in PyTorch.
+"""
 import itertools
 import numpy as np
 import torch
@@ -32,17 +35,19 @@ class LogisticRegression(nn.Module):
 
 class LinearRegression:
     def __init__(
-        self, train_set_normalized, train_targets,
+        self, train_set, train_targets,
     ):
         self.train_targets = -torch.log(9 / (train_targets - 1) - 1)
-        self.train_set_normalized = train_set_normalized
+        self.train_set = train_set
+        self.train_set = torch.hstack((torch.ones((self.train_set.shape[0], 1)), self.train_set))
         self.w = None
 
-    def eval(self, test_set_normalized, test_targets):
+    def eval(self, test_set, test_targets):
+        test_set = torch.hstack((torch.ones((test_set.shape[0], 1)), test_set))
         if self.w is None:
             self.fit()
 
-        transformed_preds = test_set_normalized @ self.w
+        transformed_preds = test_set @ self.w
         preds = 9 * 1 / (1 + torch.exp(-transformed_preds)) + 1
 
         loss = (test_targets - preds).abs().mean().item()
@@ -50,7 +55,7 @@ class LinearRegression:
         return loss
 
     def fit(self):
-        self.w = torch.linalg.pinv(self.train_set_normalized) @ self.train_targets
+        self.w = torch.linalg.pinv(self.train_set) @ self.train_targets
 
 
 class DeepReLU(nn.Module):
@@ -256,6 +261,8 @@ def train_logistic_regression(
 
     print("Training loss (MAE):", best_loss_in_mae.item())
     print("Test loss (MAE):", test_loss.item())
+    print(model.layer1.weight)
+    print(model.layer1.bias)
     return best_loss_in_mae.item(), test_loss.item(), test_pred.squeeze().numpy()
 
 
