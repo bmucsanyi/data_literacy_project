@@ -1,4 +1,4 @@
-# Analysing Influential Factors of a Successful Movie
+# Analyzing Influential Factors of a Successful Movie
 
 ### Abstract
 
@@ -7,7 +7,7 @@ We use the official IMDb datasets extended with scraped content from the IMDb we
 ### Downloading Data
 * [Link to the data used](https://drive.google.com/drive/folders/1YYIwQUfeCLxBscTO9i1_9-AoPWsOQbS-?usp=sharing)
 * The ``dat`` folder should be copied into the root folder of the repository.
-* After that, ``src.preprocess.py`` can be ran to do the preprocessing step on the data.
+* After that, ``src.preprocess.py`` can be run to do the preprocessing step on the data.
 
 ### Usage
 * To recreate figures, use ``exp.fig_1.py``, ``exp.fig_2.py``, ``exp.fig_A1.py``, and ``exp.fig_A2.py``.
